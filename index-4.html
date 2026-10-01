@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Turnos y Nómina</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0F8B8D">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F1F5F4; --card:#ffffff; --text:#1B2321; --muted:#69756F;
+    --border:#DDE4E2; --accent:#0F8B8D; --accent-ink:#ffffff;
+    --good:#0F8B8D; --good-bg:#E1F1F0; --bad:#C6503C; --bad-bg:#FBEAE5;
+    --warn:#C98A2A; --warn-bg:#FAF0DD; --track:#E1E8E6;
+    --amber:#E7A23A; --amber-ink:#241A05; --ink:#0F1719; --ink-text:#F1F5F4;
+    --hero-track:rgba(241,245,244,0.16);
+    --font-display:'Fraunces', Georgia, 'Times New Roman', serif;
+    --dia:#fde68a; --tarde:#fdba74; --noche:#93c5fd; --descanso:#d1d5db;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0F1416; --card:#1A2224; --text:#E6ECEA; --muted:#93A19E;
+      --border:#2A3436; --accent:#2DBFC0; --accent-ink:#052425;
+      --good:#2DBFC0; --good-bg:#0F2B2B; --bad:#E27C68; --bad-bg:#331A16;
+      --warn:#E0AE5B; --warn-bg:#2E230F; --track:#2A3436;
+      --amber:#F0B655; --amber-ink:#2A1D06; --ink:#080D0E; --ink-text:#F1F5F4;
+      --dia:#a16207; --tarde:#9a3412; --noche:#1e40af; --descanso:#3f3f46;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0F1416; --card:#1A2224; --text:#E6ECEA; --muted:#93A19E;
+    --border:#2A3436; --accent:#2DBFC0; --accent-ink:#052425;
+    --good:#2DBFC0; --good-bg:#0F2B2B; --bad:#E27C68; --bad-bg:#331A16;
+    --warn:#E0AE5B; --warn-bg:#2E230F; --track:#2A3436;
+    --amber:#F0B655; --amber-ink:#2A1D06; --ink:#080D0E; --ink-text:#F1F5F4;
+    --dia:#a16207; --tarde:#9a3412; --noche:#1e40af; --descanso:#3f3f46;
+  }
+  *{box-sizing:border-box;}
+  html,body{ height:100%; }
+  :root{ padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:16px; padding-bottom:calc(140px + env(safe-area-inset-bottom,0px)); max-width:760px; margin:0 auto;
+  }
+  h1{font-family:var(--font-display); font-weight:600; font-size:21px; margin:8px 0 2px; letter-spacing:-0.01em;}
+  .sub{color:var(--muted); font-size:13px; margin-bottom:16px;}
+  .card{ background:var(--card); border:1px solid var(--border); border-radius:18px; padding:16px; margin-bottom:14px; box-shadow:0 1px 2px rgba(15,20,22,0.05); }
+  .card h2{font-family:var(--font-display); font-weight:600; font-size:16.5px; margin:0 0 10px; display:flex; align-items:center; gap:7px;}
+  label{font-size:12px; color:var(--muted); display:block; margin-bottom:3px;}
+  input[type=number], input[type=text], input[type=date]{
+    width:100%; padding:9px 11px; border-radius:10px; border:1px solid var(--border);
+    background:var(--bg); color:var(--text); font-size:14px;
+  }
+  select{ padding:9px; border-radius:10px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:13px; width:100%; }
+  .row{display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap;}
+  .row > div{flex:1; min-width:110px;}
+  button{ background:var(--accent); color:var(--accent-ink); border:none; border-radius:999px; padding:10px 16px; font-size:13.5px; font-weight:600; cursor:pointer; }
+  button.secondary{background:transparent; color:var(--accent); border:1.5px solid var(--accent);}
+  button.danger{background:transparent; color:var(--bad); border:1.5px solid var(--bad); padding:5px 11px; font-size:12px;}
+  button.small{padding:7px 12px; font-size:12px;}
+  .actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
+  .footer-note{font-size:11px; color:var(--muted); text-align:center; margin:18px 0 6px; line-height:1.5;}
+
+  /* calendario */
+  .cal-nav{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+  .cal-nav .titulo{font-family:var(--font-display); font-weight:600; font-size:15.5px; text-transform:capitalize;}
+  .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px;}
+  .cal-dow{font-size:10px; color:var(--muted); text-align:center; padding-bottom:2px;}
+  .cal-day{
+    aspect-ratio:1; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    font-size:12px; border:1px solid var(--border); position:relative;
+  }
+  .cal-day.dia{background:var(--dia);}
+  .cal-day.tarde{background:var(--tarde);}
+  .cal-day.noche{background:var(--noche);}
+  .cal-day.descanso{background:var(--descanso);}
+  .cal-day .num{font-weight:700;}
+  .cal-day .tipo{font-size:8.5px; text-transform:uppercase;}
+  .cal-day.hoy{outline:2px solid var(--accent); outline-offset:1px;}
+  .cal-day.vacio{background:transparent; border:none;}
+  .legend{display:flex; gap:12px; margin-top:10px; font-size:11px; flex-wrap:wrap;}
+  .legend span{display:inline-flex; align-items:center; gap:5px;}
+  .legend i{width:12px; height:12px; border-radius:3px; display:inline-block;}
+  .lookup-result{
+    margin-top:10px; padding:12px; border-radius:14px; background:var(--bg); border:1px solid var(--border);
+    font-size:14px; text-align:center; font-weight:700;
+  }
+  .ancla-item{ display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px; }
+  .ancla-item:last-child{border-bottom:none;}
+  .ancla-item .meta{color:var(--muted); font-size:11.5px;}
+
+  /* bloques de secuencia */
+  .bloque-item{ display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--border); }
+  .bloque-item:last-child{border-bottom:none;}
+  .bloque-item .swatch{width:14px; height:14px; border-radius:4px; flex-shrink:0;}
+  .bloque-item .info{flex:1; font-size:13.5px;}
+  .preset-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
+  .preset-row button{font-size:11.5px; padding:7px 11px;}
+
+  /* nomina */
+  .factor-row{display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); font-size:12.5px; gap:8px;}
+  .factor-row:last-child{border-bottom:none;}
+  .factor-row .nombre{flex:1.6;}
+  .factor-row .nombre small{display:block; color:var(--muted); font-size:10.5px;}
+  .factor-row input{max-width:80px;}
+  .total-box{ margin-top:10px; padding:12px 14px; border-radius:14px; background:var(--good-bg); color:var(--good); font-weight:700; display:flex; justify-content:space-between; }
+  .presta-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;}
+  .presta-item{background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:10px;}
+  .presta-item .label{font-size:11px; color:var(--muted);}
+  .presta-item .value{font-family:var(--font-display); font-weight:600; font-size:15px; margin-top:2px;}
+
+  /* planilla */
+  table.planilla{width:100%; border-collapse:collapse; font-size:12px; min-width:560px;}
+  table.planilla th{ text-align:left; color:var(--muted); font-weight:600; font-size:10.5px; text-transform:uppercase; padding:6px 6px; border-bottom:1px solid var(--border); }
+  table.planilla td{ padding:6px 6px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  table.planilla select, table.planilla input{ padding:5px; font-size:12px; }
+  table.planilla input[type=number]{ width:55px; }
+  .badge-domfest{ background:#a855f7; color:#fff; font-size:9px; padding:1px 6px; border-radius:8px; margin-left:4px; }
+  .badge-override{ background:var(--warn-bg); color:var(--warn); font-size:9px; padding:1px 6px; border-radius:8px; margin-left:4px; }
+  .liq-row{display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border); font-size:13.5px;}
+  .liq-row:last-child{border-bottom:none;}
+  .liq-row.sub{color:var(--muted); font-size:12px;}
+  .liq-row.bold{font-weight:700;}
+  .liq-row.neg{color:var(--bad);}
+  .liq-row.pos{color:var(--good);}
+  .liq-row.neto{font-family:var(--font-display); font-size:17px; font-weight:700; color:var(--good); padding-top:10px; border-top:2px solid var(--border); margin-top:4px;}
+
+  /* app shell: nav + lock + hero + config */
+  .navbar{
+    position:fixed; left:14px; right:14px; bottom:calc(12px + env(safe-area-inset-bottom,0));
+    background:var(--ink); border-radius:22px;
+    display:flex; padding:8px 6px; box-shadow:0 8px 24px rgba(8,13,14,0.3);
+    z-index:50; max-width:728px; margin:0 auto;
+  }
+  .navbar button{
+    flex:1; background:none; border:none; color:rgba(241,245,244,0.55); font-size:10.5px; padding:6px 2px;
+    display:flex; flex-direction:column; align-items:center; gap:3px; border-radius:14px;
+  }
+  .navbar button .ico{font-size:18px;}
+  .navbar button.activo{color:var(--ink-text); background:rgba(241,245,244,0.1);}
+  .tabcontent{display:none;}
+  .tabcontent.activo{display:block;}
+  .lock-screen{
+    position:fixed; inset:0; background:var(--bg); z-index:200; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; padding:20px;
+  }
+  .lock-screen h2{margin-bottom:4px; font-family:var(--font-display);}
+  .pin-dots{display:flex; gap:12px; margin:18px 0;}
+  .pin-dots .dot{width:14px; height:14px; border-radius:50%; border:2px solid var(--accent); background:transparent;}
+  .pin-dots .dot.filled{background:var(--accent);}
+  .pin-pad{display:grid; grid-template-columns:repeat(3,64px); gap:12px;}
+  .pin-pad button{ width:64px; height:64px; border-radius:50%; background:var(--card); border:1px solid var(--border); color:var(--text); font-size:20px; font-weight:700; }
+  .pin-error{color:var(--bad); font-size:13px; height:18px; margin-top:6px;}
+  .switchline{display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border);}
+  .switchline:last-child{border-bottom:none;}
+  .switchline label{margin:0; font-size:14px; color:var(--text);}
+  .switch{position:relative; width:44px; height:24px;}
+  .switch input{opacity:0; width:0; height:0;}
+  .switch .track{position:absolute; inset:0; background:var(--track); border-radius:20px; transition:.2s; cursor:pointer;}
+  .switch .track::before{content:""; position:absolute; width:18px; height:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s;}
+  .switch input:checked + .track{background:var(--accent);}
+  .switch input:checked + .track::before{transform:translateX(20px);}
+
+  .hero-card{ background:var(--ink); color:var(--ink-text); border-radius:22px; padding:22px 20px 18px; margin-bottom:14px; border:none; box-shadow:0 8px 24px rgba(8,13,14,0.28); }
+  .hero-top{margin-bottom:6px;}
+  .dash-greeting{font-family:var(--font-display); font-weight:600; font-size:20px; margin-bottom:2px; color:var(--ink-text);}
+  .hero-sub{color:rgba(241,245,244,0.6); font-size:12.5px;}
+  .hero-turno-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px;}
+  .hero-turno-box{background:rgba(241,245,244,0.08); border-radius:16px; padding:14px 12px; text-align:center;}
+  .hero-turno-box .etiqueta{font-size:11px; color:rgba(241,245,244,0.55); text-transform:uppercase; letter-spacing:.03em;}
+  .hero-turno-box .valor{font-family:var(--font-display); font-weight:700; font-size:19px; margin-top:4px;}
+  .dash-actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px;}
+
+  .modal-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:300; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .modal-box{ background:var(--card); border-radius:16px; padding:20px; max-width:340px; width:100%; box-shadow:0 10px 40px rgba(0,0,0,0.3); }
+  .modal-box p{margin:0 0 18px; font-size:14.5px; line-height:1.5;}
+  .modal-actions{display:flex; gap:8px; justify-content:flex-end;}
+</style>
+</head>
+<body>
+
+<!-- CANDADO PIN -->
+<div class="lock-screen" id="lockScreen" style="display:none;">
+  <div style="font-size:40px;">🔒</div>
+  <h2 id="lockNombre">Turnos y Nómina</h2>
+  <div class="sub" style="margin:0;">Ingresa tu PIN</div>
+  <div class="pin-dots" id="pinDots"></div>
+  <div class="pin-error" id="pinError"></div>
+  <div class="pin-pad" id="pinPad"></div>
+</div>
+
+<div id="appContent" style="display:none;">
+
+<h1>🗓️ Turnos y Nómina</h1>
+<div class="sub">Todo se guarda en este dispositivo. Valores legales en pesos colombianos.</div>
+
+<!-- ===================== INICIO ===================== -->
+<div class="tabcontent activo" id="tab-inicio">
+  <div class="hero-card">
+    <div class="hero-top">
+      <div class="dash-greeting" id="dashGreeting">Hola 👋</div>
+      <div class="hero-sub">así va tu semana</div>
+    </div>
+    <div class="hero-turno-grid">
+      <div class="hero-turno-box">
+        <div class="etiqueta">Hoy</div>
+        <div class="valor" id="heroHoy">—</div>
+      </div>
+      <div class="hero-turno-box">
+        <div class="etiqueta">Mañana</div>
+        <div class="valor" id="heroManana">—</div>
+      </div>
+    </div>
+    <div class="dash-actions">
+      <button onclick="cambiarTabPrincipal('cal')">📅 Ver calendario</button>
+      <button class="secondary" style="color:var(--ink-text); border-color:rgba(241,245,244,0.35);" onclick="cambiarTabPrincipal('nom')">🧮 Ir a nómina</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== CALENDARIO ===================== -->
+<div class="tabcontent" id="tab-cal">
+
+<div class="card">
+  <h2>🔍 Consultar una fecha</h2>
+  <div class="row">
+    <div><input type="date" id="fechaConsulta"></div>
+    <div style="flex:0 0 auto;"><button onclick="consultarFecha()">Ver turno</button></div>
+  </div>
+  <div id="resultadoConsulta"></div>
+</div>
+
+<div class="card">
+  <h2>📌 Definir o corregir la secuencia</h2>
+  <div class="sub" style="margin:-4px 0 10px;">Registra una fecha conocida y su turno. Si tu secuencia cambia por un imprevisto, agrega una nueva desde ese día en adelante.</div>
+  <div class="row">
+    <div><label>Fecha</label><input type="date" id="anclaFecha"></div>
+    <div>
+      <label>Bloque de tu secuencia</label>
+      <select id="anclaBloque" onchange="actualizarSelectorDiaBloque()"></select>
+    </div>
+    <div>
+      <label>Día del bloque</label>
+      <select id="anclaPos"></select>
+    </div>
+  </div>
+  <button onclick="agregarAncla()">Guardar</button>
+  <div id="listaAnclas" style="margin-top:10px;"></div>
+</div>
+
+<div class="card">
+  <div class="cal-nav">
+    <button class="secondary small" onclick="cambiarMes(-1)">‹ Mes anterior</button>
+    <span class="titulo" id="calTitulo"></span>
+    <button class="secondary small" onclick="cambiarMes(1)">Mes siguiente ›</button>
+  </div>
+  <div class="cal-grid" id="calDow"></div>
+  <div class="cal-grid" id="calGrid" style="margin-top:4px;"></div>
+  <div class="legend" id="calLegend"></div>
+</div>
+
+</div>
+
+<!-- ===================== NOMINA ===================== -->
+<div class="tabcontent" id="tab-nom">
+
+<div class="card">
+  <h2>⚙️ Parámetros de tu salario</h2>
+  <div class="row">
+    <div><label>Salario mensual</label><input type="number" id="salario" value="2723700"></div>
+    <div><label>Divisor de horas mensual</label><input type="number" id="divisor" value="210"></div>
+  </div>
+  <div class="row">
+    <div>
+      <label style="display:flex; align-items:center; gap:6px;">
+        <input type="checkbox" id="incluyeAux" checked style="width:16px;height:16px;"> ¿Recibe auxilio de transporte?
+      </label>
+      <input type="number" id="auxTransporte" value="249095">
+    </div>
+  </div>
+  <div class="sub" style="margin:6px 0 0;">El auxilio de transporte NO se usa para calcular horas extra/recargos, pero sí se usa para las prestaciones.</div>
+
+  <div style="margin-top:12px; font-weight:600; font-size:13px;">Porcentajes legales vigentes (sept. 2026)</div>
+  <div class="row" style="margin-top:6px;">
+    <div><label>Recargo nocturno %</label><input type="number" id="pNocturno" value="35" step="0.1"></div>
+    <div><label>Hora extra diurna %</label><input type="number" id="pExtraDia" value="25" step="0.1"></div>
+  </div>
+  <div class="row">
+    <div><label>Hora extra nocturna %</label><input type="number" id="pExtraNoche" value="75" step="0.1"></div>
+    <div><label>Recargo dominical/festivo %</label><input type="number" id="pDominical" value="90" step="0.1"></div>
+  </div>
+  <div class="sub" style="margin:0;">Jornada nocturna: 7:00 p.m. a 6:00 a.m. Estas tasas cambian con el tiempo por ley.</div>
+</div>
+
+<div class="card">
+  <h2>⏱️ Horario de tus turnos</h2>
+  <div class="sub" style="margin:-4px 0 8px;">Define el horario de cada tipo de turno que uses en tu secuencia.</div>
+  <div class="row">
+    <div><label>Turno Día — inicio</label><input type="text" id="hDiaIni" value="07:00"></div>
+    <div><label>Turno Día — fin</label><input type="text" id="hDiaFin" value="19:00"></div>
+    <div><label>Descanso (horas)</label><input type="number" id="hDescanso" value="1" step="0.5"></div>
+  </div>
+  <div class="row">
+    <div><label>Turno Tarde — inicio</label><input type="text" id="hTardeIni" value="14:00"></div>
+    <div><label>Turno Tarde — fin</label><input type="text" id="hTardeFin" value="22:00"></div>
+  </div>
+  <div class="row">
+    <div><label>Turno Noche — inicio</label><input type="text" id="hNocheIni" value="19:00"></div>
+    <div><label>Turno Noche — fin</label><input type="text" id="hNocheFin" value="07:00"></div>
+  </div>
+  <div class="row">
+    <div><label>Domingo Día — inicio</label><input type="text" id="hDomDiaIni" value="07:00"></div>
+    <div><label>Domingo Día — fin</label><input type="text" id="hDomDiaFin" value="18:00"></div>
+  </div>
+  <div class="row">
+    <div><label>Domingo Tarde — inicio</label><input type="text" id="hDomTardeIni" value="14:00"></div>
+    <div><label>Domingo Tarde — fin</label><input type="text" id="hDomTardeFin" value="21:00"></div>
+  </div>
+  <div class="row">
+    <div><label>Domingo Noche — inicio</label><input type="text" id="hDomNocheIni" value="18:00"></div>
+    <div><label>Domingo Noche — fin</label><input type="text" id="hDomNocheFin" value="05:00"></div>
+  </div>
+  <div class="sub" style="margin:6px 0 0;">Formato 24 horas (HH:MM). Si "fin" es antes de "inicio", se entiende que cruza la medianoche.</div>
+</div>
+
+<div class="card">
+  <h2>🎉 Festivos</h2>
+  <div class="row">
+    <div><input type="date" id="festivoNuevo"></div>
+    <div style="flex:0 0 auto;"><button class="secondary small" onclick="agregarFestivo()">+ Agregar festivo</button></div>
+  </div>
+  <div id="listaFestivos" class="sub" style="margin-top:6px;"></div>
+</div>
+
+<div class="card">
+  <h2>📆 Calcular tu corte</h2>
+  <div class="row">
+    <div><label>Corte — desde</label><input type="date" id="corteInicio"></div>
+    <div><label>Corte — hasta</label><input type="date" id="corteFin"></div>
+  </div>
+  <div class="row">
+    <div><label>Meta de horas del corte (opcional)</label><input type="number" id="metaHoras" placeholder="ej. 84"></div>
+  </div>
+  <button onclick="calcularDesdeCalendario()">📥 Calcular desde el calendario de turnos</button>
+  <div id="resumenCorte" class="sub" style="margin-top:10px;"></div>
+</div>
+
+<div class="card" id="cardPlanilla" style="display:none;">
+  <h2>📋 Planilla de turnos del corte</h2>
+  <div class="sub" style="margin:-4px 0 8px;">Cambia el turno de un día puntual si trabajaste distinto a lo que dice el calendario.</div>
+  <div id="planillaBox" style="overflow-x:auto;"></div>
+</div>
+
+<div class="card" id="cardLiquidacion" style="display:none;">
+  <h2>💰 Liquidación del corte</h2>
+  <div id="liquidacionBox"></div>
+</div>
+
+<div class="card">
+  <h2>🧾 Recargos y horas extra de este corte</h2>
+  <div id="filasHoras"></div>
+  <div class="total-box"><span>Total recargos + horas extra de este corte</span><span id="totalCorte">$0</span></div>
+</div>
+
+<div class="card">
+  <h2>📦 Prestaciones sociales (estimado mensual)</h2>
+  <div class="sub" style="margin:-4px 0 4px;">Provisión de referencia; no reemplaza tu comprobante de nómina real.</div>
+  <div class="presta-grid">
+    <div class="presta-item"><div class="label">Cesantías (mensual)</div><div class="value" id="pCesantias">$0</div></div>
+    <div class="presta-item"><div class="label">Intereses a cesantías (mensual)</div><div class="value" id="pIntCesantias">$0</div></div>
+    <div class="presta-item"><div class="label">Prima de servicios (mensual)</div><div class="value" id="pPrima">$0</div></div>
+    <div class="presta-item"><div class="label">Vacaciones (mensual)</div><div class="value" id="pVacaciones">$0</div></div>
+  </div>
+</div>
+
+</div>
+
+<!-- ===================== CONFIG ===================== -->
+<div class="tabcontent" id="tab-config">
+
+  <div class="card">
+    <h2>👤 Perfil</h2>
+    <div class="row"><div><label>Tu nombre</label><input type="text" id="perfilNombre" placeholder="ej. Héctor"></div></div>
+    <button class="small" onclick="guardarPerfil()">Guardar nombre</button>
+  </div>
+
+  <div class="card">
+    <h2>🔒 Seguridad</h2>
+    <div class="switchline">
+      <label>Pedir PIN al abrir la app</label>
+      <label class="switch"><input type="checkbox" id="pinActivo" onchange="togglePinActivo(this.checked)"><span class="track"></span></label>
+    </div>
+    <div id="pinSetupBox" style="display:none; margin-top:10px;">
+      <div class="row"><div><label>Nuevo PIN (4 dígitos)</label><input type="number" id="nuevoPin" placeholder="1234" maxlength="4"></div></div>
+      <button class="small" onclick="guardarPin()">Guardar PIN</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🔁 Tu secuencia de turnos</h2>
+    <div class="sub" style="margin:-4px 0 10px;">Arma el ciclo que se repite: agrega cuántos días seguidos de cada tipo trabajas.</div>
+    <div class="preset-row">
+      <button class="secondary small" onclick="usarPreset('2x2')">2x2 (Día-Noche)</button>
+      <button class="secondary small" onclick="usarPreset('4x3')">4x3</button>
+      <button class="secondary small" onclick="usarPreset('6x1')">6x1</button>
+      <button class="secondary small" onclick="usarPreset('mtn')">Mañana-Tarde-Noche</button>
+    </div>
+    <div id="listaBloques" style="margin-top:10px;"></div>
+    <div class="addbox" style="border:1.5px dashed var(--border); border-radius:14px; padding:12px; margin-top:8px;">
+      <div class="row">
+        <div>
+          <label>Tipo de turno</label>
+          <select id="nuevoBloqueTipo">
+            <option value="dia">Día</option>
+            <option value="tarde">Tarde</option>
+            <option value="noche">Noche</option>
+            <option value="descanso">Descanso</option>
+          </select>
+        </div>
+        <div><label>¿Cuántos días seguidos?</label><input type="number" id="nuevoBloqueDias" value="2" min="1"></div>
+      </div>
+      <button class="secondary small" onclick="agregarBloque()">+ Agregar al ciclo</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>💾 Tus datos</h2>
+    <div class="actions">
+      <button class="secondary small" onclick="exportarDatos()">⬇️ Exportar copia (.json)</button>
+      <button class="danger small" onclick="reiniciarTodo()">Reiniciar todos los datos</button>
+    </div>
+    <div class="row" style="margin-top:10px;">
+      <div><label>Importar una copia (.json)</label><input type="file" id="archivoImportar" accept="application/json"></div>
+    </div>
+    <button class="secondary small" onclick="importarDatos()">⬆️ Importar copia</button>
+  </div>
+
+  <div class="footer-note">
+    Cálculos basados en el Código Sustantivo del Trabajo, Ley 2101 de 2021 y Ley 2466 de 2025 (valores vigentes en septiembre de 2026). Verifica los porcentajes si liquidas un período distinto, o consulta a tu área de nómina o un asesor laboral.
+  </div>
+
+</div>
+
+<div style="height:40px;"></div>
+
+</div>
+
+<!-- MODAL PROPIO -->
+<div class="modal-overlay" id="modalOverlay" style="display:none;">
+  <div class="modal-box">
+    <p id="modalMensaje"></p>
+    <div class="modal-actions" id="modalAcciones"></div>
+  </div>
+</div>
+
+<div class="navbar">
+  <button id="nav-inicio" onclick="cambiarTabPrincipal('inicio')"><span class="ico">🏠</span>Inicio</button>
+  <button id="nav-cal" onclick="cambiarTabPrincipal('cal')"><span class="ico">📅</span>Turnos</button>
+  <button id="nav-nom" onclick="cambiarTabPrincipal('nom')"><span class="ico">🧮</span>Nómina</button>
+  <button id="nav-config" onclick="cambiarTabPrincipal('config')"><span class="ico">⚙️</span>Config</button>
+</div>
+
+<script>
+/* ---------- utilidades ---------- */
+function loadJSON(k, fallback){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):fallback; }catch(e){ return fallback; } }
+function save(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function fmt(n){ return '$' + Math.round(n).toLocaleString('es-CO'); }
+function uid(){ return 'id'+Math.random().toString(36).slice(2,9); }
+const NOMBRE_TIPO = {dia:'Día', tarde:'Tarde', noche:'Noche', descanso:'Descanso'};
+const ICONO_TIPO = {dia:'🌞', tarde:'🌇', noche:'🌙', descanso:'🛌'};
+
+/* ---------- modal propio (reemplaza confirm/alert nativos) ---------- */
+function mostrarConfirm(mensaje, onSi){
+  document.getElementById('modalMensaje').textContent = mensaje;
+  const acciones = document.getElementById('modalAcciones');
+  acciones.innerHTML = '';
+  const btnCancelar = document.createElement('button');
+  btnCancelar.className = 'secondary small';
+  btnCancelar.textContent = 'Cancelar';
+  btnCancelar.onclick = ()=> document.getElementById('modalOverlay').style.display = 'none';
+  const btnSi = document.createElement('button');
+  btnSi.className = 'danger small';
+  btnSi.textContent = 'Sí, continuar';
+  btnSi.onclick = ()=>{ document.getElementById('modalOverlay').style.display = 'none'; onSi(); };
+  acciones.appendChild(btnCancelar);
+  acciones.appendChild(btnSi);
+  document.getElementById('modalOverlay').style.display = 'flex';
+}
+function mostrarAlerta(mensaje){
+  document.getElementById('modalMensaje').textContent = mensaje;
+  const acciones = document.getElementById('modalAcciones');
+  acciones.innerHTML = '';
+  const btnOk = document.createElement('button');
+  btnOk.className = 'small';
+  btnOk.textContent = 'Entendido';
+  btnOk.onclick = ()=> document.getElementById('modalOverlay').style.display = 'none';
+  acciones.appendChild(btnOk);
+  document.getElementById('modalOverlay').style.display = 'flex';
+}
+
+/* ---------- navegación por pestañas ---------- */
+function cambiarTabPrincipal(tab){
+  ['inicio','cal','nom','config'].forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('activo', t===tab);
+    document.getElementById('nav-'+t).classList.toggle('activo', t===tab);
+  });
+  window.scrollTo(0,0);
+}
+
+/* ---------- secuencia de turnos: bloques dinámicos ---------- */
+let bloques = loadJSON('turnos_bloques_v1', [
+  {tipo:'dia', dias:2}, {tipo:'noche', dias:2}, {tipo:'descanso', dias:2}
+]);
+
+function construirPatron(){
+  let patron = [];
+  bloques.forEach(b=>{ for(let i=0;i<b.dias;i++) patron.push(b.tipo); });
+  return patron;
+}
+function longitudPatron(){ return bloques.reduce((a,b)=>a+b.dias,0); }
+function offsetBloque(indiceBloque){
+  let offset=0;
+  for(let i=0;i<indiceBloque;i++) offset += bloques[i].dias;
+  return offset;
+}
+
+function usarPreset(nombre){
+  const presets = {
+    '2x2': [{tipo:'dia',dias:2},{tipo:'noche',dias:2},{tipo:'descanso',dias:2}],
+    '4x3': [{tipo:'dia',dias:4},{tipo:'noche',dias:4},{tipo:'descanso',dias:3}],
+    '6x1': [{tipo:'dia',dias:6},{tipo:'descanso',dias:1}],
+    'mtn': [{tipo:'dia',dias:7},{tipo:'tarde',dias:7},{tipo:'noche',dias:7},{tipo:'descanso',dias:7}],
+  };
+  mostrarConfirm('Cambiar tu secuencia borra las fechas de referencia que ya tenías (porque dejan de tener sentido con el nuevo ciclo). ¿Continuar?', ()=>{
+    bloques = presets[nombre];
+    save('turnos_bloques_v1', bloques);
+    anclas = [];
+    save('turnos_anclas_v1', anclas);
+    renderBloques();
+    renderSelectorAncla();
+    renderAnclas();
+    renderCalendario();
+    renderLeyenda();
+  });
+}
+function agregarBloque(){
+  const tipo = document.getElementById('nuevoBloqueTipo').value;
+  const dias = parseInt(document.getElementById('nuevoBloqueDias').value)||1;
+  if(dias<1) return;
+  mostrarConfirm('Agregar esto cambia tu ciclo y borra las fechas de referencia anteriores. ¿Continuar?', ()=>{
+    bloques.push({tipo, dias});
+    save('turnos_bloques_v1', bloques);
+    anclas = [];
+    save('turnos_anclas_v1', anclas);
+    renderBloques();
+    renderSelectorAncla();
+    renderAnclas();
+    renderCalendario();
+    renderLeyenda();
+  });
+}
+function eliminarBloque(idx){
+  mostrarConfirm('¿Quitar este bloque de tu ciclo? Esto borra tus fechas de referencia.', ()=>{
+    bloques.splice(idx,1);
+    if(bloques.length===0) bloques = [{tipo:'descanso', dias:1}];
+    save('turnos_bloques_v1', bloques);
+    anclas = [];
+    save('turnos_anclas_v1', anclas);
+    renderBloques();
+    renderSelectorAncla();
+    renderAnclas();
+    renderCalendario();
+    renderLeyenda();
+  });
+}
+function moverBloque(idx, delta){
+  const nuevo = idx+delta;
+  if(nuevo<0 || nuevo>=bloques.length) return;
+  [bloques[idx], bloques[nuevo]] = [bloques[nuevo], bloques[idx]];
+  save('turnos_bloques_v1', bloques);
+  renderBloques();
+  renderSelectorAncla();
+  renderCalendario();
+}
+function renderBloques(){
+  const box = document.getElementById('listaBloques');
+  box.innerHTML = '';
+  bloques.forEach((b,idx)=>{
+    const div = document.createElement('div');
+    div.className = 'bloque-item';
+    div.innerHTML = `
+      <span class="swatch" style="background:var(--${b.tipo})"></span>
+      <div class="info"><b>${NOMBRE_TIPO[b.tipo]}</b> — ${b.dias} día(s) seguido(s)</div>
+      <button class="secondary small" style="padding:4px 8px;" onclick="moverBloque(${idx},-1)">↑</button>
+      <button class="secondary small" style="padding:4px 8px;" onclick="moverBloque(${idx},1)">↓</button>
+      <button class="danger small" onclick="eliminarBloque(${idx})">✕</button>
+    `;
+    box.appendChild(div);
+  });
+}
+function renderLeyenda(){
+  const tiposUsados = [...new Set(bloques.map(b=>b.tipo))];
+  const box = document.getElementById('calLegend');
+  box.innerHTML = tiposUsados.map(t=>`<span><i style="background:var(--${t})"></i> ${NOMBRE_TIPO[t]}</span>`).join('');
+}
+
+/* ---------- ancla (fecha de referencia) ---------- */
+let anclas = loadJSON('turnos_anclas_v1', []);
+
+function renderSelectorAncla(){
+  const selBloque = document.getElementById('anclaBloque');
+  selBloque.innerHTML = bloques.map((b,idx)=>`<option value="${idx}">${NOMBRE_TIPO[b.tipo]} (bloque de ${b.dias} día${b.dias>1?'s':''})</option>`).join('');
+  actualizarSelectorDiaBloque();
+}
+function actualizarSelectorDiaBloque(){
+  const idx = parseInt(document.getElementById('anclaBloque').value)||0;
+  const dias = bloques[idx] ? bloques[idx].dias : 1;
+  const selPos = document.getElementById('anclaPos');
+  let opts = '';
+  for(let i=1;i<=dias;i++) opts += `<option value="${i}">${i}° día</option>`;
+  selPos.innerHTML = opts;
+}
+
+function agregarAncla(){
+  const fecha = document.getElementById('anclaFecha').value;
+  const bloqueIdx = parseInt(document.getElementById('anclaBloque').value)||0;
+  const pos = parseInt(document.getElementById('anclaPos').value)||1;
+  if(!fecha) return;
+  const idx = (offsetBloque(bloqueIdx) + (pos-1)) % longitudPatron();
+  const tipo = bloques[bloqueIdx].tipo;
+  anclas.push({id:uid(), fecha, tipo, pos, idx});
+  anclas.sort((a,b)=> a.fecha.localeCompare(b.fecha));
+  save('turnos_anclas_v1', anclas);
+  renderAnclas();
+  renderCalendario();
+}
+function eliminarAncla(id){
+  anclas = anclas.filter(a=>a.id!==id);
+  save('turnos_anclas_v1', anclas);
+  renderAnclas();
+  renderCalendario();
+}
+function renderAnclas(){
+  const box = document.getElementById('listaAnclas');
+  if(anclas.length===0){ box.innerHTML = '<div class="sub" style="margin:0;">Aún no has definido ninguna fecha de referencia.</div>'; return; }
+  box.innerHTML = '';
+  anclas.forEach(a=>{
+    const div = document.createElement('div');
+    div.className = 'ancla-item';
+    div.innerHTML = `
+      <div>
+        <b>${new Date(a.fecha+'T00:00:00').toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'})}</b>
+        <div class="meta">${NOMBRE_TIPO[a.tipo]} · ${a.pos}° día del bloque</div>
+      </div>
+      <button class="danger small" onclick="eliminarAncla('${a.id}')">Eliminar</button>
+    `;
+    box.appendChild(div);
+  });
+}
+
+function tipoParaFecha(fechaStr){
+  const candidatas = anclas.filter(a => a.fecha <= fechaStr);
+  if(candidatas.length===0) return null;
+  const ancla = candidatas[candidatas.length-1];
+  const d1 = new Date(ancla.fecha+'T00:00:00');
+  const d2 = new Date(fechaStr+'T00:00:00');
+  const diffDias = Math.round((d2-d1)/86400000);
+  const longitud = longitudPatron();
+  let idx = (ancla.idx + diffDias) % longitud;
+  if(idx<0) idx += longitud;
+  return construirPatron()[idx];
+}
+
+function consultarFecha(){
+  const fecha = document.getElementById('fechaConsulta').value;
+  const box = document.getElementById('resultadoConsulta');
+  if(!fecha){ box.innerHTML=''; return; }
+  const tipo = tipoParaFecha(fecha);
+  const nombreFecha = new Date(fecha+'T00:00:00').toLocaleDateString('es-CO',{weekday:'long', day:'2-digit', month:'long', year:'numeric'});
+  if(!tipo){
+    box.innerHTML = `<div class="lookup-result">Aún no tienes una fecha de referencia. Agrega una en "Definir la secuencia".</div>`;
+    return;
+  }
+  box.innerHTML = `<div class="lookup-result">${nombreFecha}<br>${ICONO_TIPO[tipo]} ${NOMBRE_TIPO[tipo]}</div>`;
+}
+
+let mesActual = new Date().getMonth();
+let anioActual = new Date().getFullYear();
+
+function cambiarMes(delta){
+  mesActual += delta;
+  if(mesActual<0){ mesActual=11; anioActual--; }
+  if(mesActual>11){ mesActual=0; anioActual++; }
+  renderCalendario();
+}
+
+function renderCalendario(){
+  const dow = document.getElementById('calDow');
+  if(dow.children.length===0){
+    ['D','L','M','M','J','V','S'].forEach(d=>{
+      const el = document.createElement('div'); el.className='cal-dow'; el.textContent=d; dow.appendChild(el);
+    });
+  }
+  const titulo = document.getElementById('calTitulo');
+  titulo.textContent = new Date(anioActual, mesActual, 1).toLocaleDateString('es-CO',{month:'long', year:'numeric'});
+
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+  const primerDia = new Date(anioActual, mesActual, 1);
+  const diasEnMes = new Date(anioActual, mesActual+1, 0).getDate();
+  const offset = primerDia.getDay();
+  const hoyStr = new Date().toISOString().slice(0,10);
+
+  for(let i=0;i<offset;i++){
+    const el = document.createElement('div'); el.className='cal-day vacio'; grid.appendChild(el);
+  }
+  for(let d=1; d<=diasEnMes; d++){
+    const fechaStr = `${anioActual}-${String(mesActual+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const tipo = tipoParaFecha(fechaStr);
+    const el = document.createElement('div');
+    el.className = 'cal-day' + (tipo? ' '+tipo : '') + (fechaStr===hoyStr? ' hoy':'');
+    const letra = tipo ? NOMBRE_TIPO[tipo].slice(0,4) : '';
+    el.innerHTML = `<span class="num">${d}</span><span class="tipo">${letra}</span>`;
+    grid.appendChild(el);
+  }
+  actualizarHeroTurnos();
+}
+
+function actualizarHeroTurnos(){
+  const hoy = new Date().toISOString().slice(0,10);
+  const maniana = new Date(Date.now()+86400000).toISOString().slice(0,10);
+  const tHoy = tipoParaFecha(hoy);
+  const tManiana = tipoParaFecha(maniana);
+  const elHoy = document.getElementById('heroHoy');
+  const elManiana = document.getElementById('heroManana');
+  if(elHoy) elHoy.textContent = tHoy ? `${ICONO_TIPO[tHoy]} ${NOMBRE_TIPO[tHoy]}` : '—';
+  if(elManiana) elManiana.textContent = tManiana ? `${ICONO_TIPO[tManiana]} ${NOMBRE_TIPO[tManiana]}` : '—';
+}
+
+/* ---------- utilidades de horario ---------- */
+function hhmmToMin(s){ const [h,m]=s.split(':').map(x=>parseInt(x)||0); return h*60+m; }
+
+function nightOverlapExtended(start, end, nIniM, nFinM){
+  let total=0;
+  for(let dayOffset=-1440; dayOffset<=2880; dayOffset+=1440){
+    let ns, ne;
+    if(nIniM<=nFinM){ ns=nIniM+dayOffset; ne=nFinM+dayOffset; }
+    else { ns=nIniM+dayOffset; ne=nFinM+1440+dayOffset; }
+    const os = Math.max(start, ns), oe = Math.min(end, ne);
+    if(oe>os) total += (oe-os);
+  }
+  return total;
+}
+
+function calcularSegmentos(inicio, fin, descansoH, nocheIni, nocheFin){
+  const iniM = hhmmToMin(inicio);
+  let finM = hhmmToMin(fin);
+  let spanTotal = finM - iniM;
+  if(spanTotal<=0) spanTotal += 1440;
+  const nIniM = hhmmToMin(nocheIni), nFinM = hhmmToMin(nocheFin);
+  let nocturnoMin = nightOverlapExtended(iniM, iniM+spanTotal, nIniM, nFinM);
+  let diurnoMin = spanTotal - nocturnoMin;
+  let descansoMin = (descansoH||0)*60;
+  const restaDiurno = Math.min(diurnoMin, descansoMin);
+  diurnoMin -= restaDiurno;
+  descansoMin -= restaDiurno;
+  nocturnoMin -= descansoMin;
+  if(nocturnoMin<0) nocturnoMin = 0;
+  return { diurno: diurnoMin/60, nocturno: nocturnoMin/60 };
+}
+
+function getHorarios(){
+  return {
+    dia: [document.getElementById('hDiaIni').value, document.getElementById('hDiaFin').value],
+    tarde: [document.getElementById('hTardeIni').value, document.getElementById('hTardeFin').value],
+    noche: [document.getElementById('hNocheIni').value, document.getElementById('hNocheFin').value],
+    domDia: [document.getElementById('hDomDiaIni').value, document.getElementById('hDomDiaFin').value],
+    domTarde: [document.getElementById('hDomTardeIni').value, document.getElementById('hDomTardeFin').value],
+    domNoche: [document.getElementById('hDomNocheIni').value, document.getElementById('hDomNocheFin').value],
+    descanso: parseFloat(document.getElementById('hDescanso').value)||0,
+    nocheFranja: ['19:00','06:00']
+  };
+}
+
+/* ---------- festivos ---------- */
+let festivos = loadJSON('festivos_v1', []);
+function agregarFestivo(){
+  const f = document.getElementById('festivoNuevo').value;
+  if(!f || festivos.includes(f)) return;
+  festivos.push(f); festivos.sort();
+  save('festivos_v1', festivos);
+  renderFestivos();
+}
+function eliminarFestivo(f){
+  festivos = festivos.filter(x=>x!==f);
+  save('festivos_v1', festivos);
+  renderFestivos();
+}
+function renderFestivos(){
+  const box = document.getElementById('listaFestivos');
+  if(festivos.length===0){ box.innerHTML = 'No has agregado festivos (los domingos ya se detectan solos).'; return; }
+  box.innerHTML = festivos.map(f=>{
+    const txt = new Date(f+'T00:00:00').toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'});
+    return `<span style="display:inline-flex; align-items:center; gap:4px; margin:2px 6px 2px 0; background:var(--bg); border:1px solid var(--border); border-radius:20px; padding:3px 8px;">${txt} <button class="danger small" style="padding:1px 6px;" onclick="eliminarFestivo('${f}')">✕</button></span>`;
+  }).join('');
+}
+
+/* ---------- categorías de recargo/extra ---------- */
+const CATEGORIAS = [
+  {id:'recNocturno', nombre:'Recargo nocturno (turno normal)', sub:'Calculado automáticamente del calendario', tipo:'recargo', factorKeys:['pNocturno'], auto:true},
+  {id:'recDomDia', nombre:'Recargo dominical/festivo diurno', sub:'Calculado automáticamente del calendario', tipo:'recargo', factorKeys:['pDominical'], auto:true},
+  {id:'recDomNoche', nombre:'Recargo dominical/festivo nocturno', sub:'Calculado automáticamente del calendario', tipo:'recargo', factorKeys:['pDominical','pNocturno'], auto:true},
+  {id:'extraDia', nombre:'Hora extra diurna', sub:'Solo si trabajaste fuera de tu turno normal', tipo:'extra', factorKeys:['pExtraDia'], auto:false},
+  {id:'extraNoche', nombre:'Hora extra nocturna', sub:'Solo si trabajaste fuera de tu turno normal', tipo:'extra', factorKeys:['pExtraNoche'], auto:false},
+  {id:'extraDomDia', nombre:'Hora extra dominical/festiva diurna', sub:'Solo si trabajaste fuera de tu turno normal', tipo:'extra', factorKeys:['pExtraDia','pDominical'], auto:false},
+  {id:'extraDomNoche', nombre:'Hora extra dominical/festiva nocturna', sub:'Solo si trabajaste fuera de tu turno normal', tipo:'extra', factorKeys:['pExtraNoche','pDominical'], auto:false},
+];
+
+let horasCorte = loadJSON('nomina_horas_corte_v2', {});
+let planillaOverrides = loadJSON('planilla_overrides_v1', {});
+
+function detalleTurnoFecha(fecha){
+  const candidatas = anclas.filter(a => a.fecha <= fecha);
+  if(candidatas.length===0) return null;
+  const ancla = candidatas[candidatas.length-1];
+  const d1 = new Date(ancla.fecha+'T00:00:00');
+  const d2 = new Date(fecha+'T00:00:00');
+  const diffDias = Math.round((d2-d1)/86400000);
+  const longitud = longitudPatron();
+  let idx = (ancla.idx + diffDias) % longitud;
+  if(idx<0) idx += longitud;
+  return { tipo: construirPatron()[idx] };
+}
+
+function segmentoParaDia(tipoEfectivo, esDomFest, h){
+  if(tipoEfectivo==='descanso' || !tipoEfectivo) return {diurno:0, nocturno:0};
+  let rango;
+  if(tipoEfectivo==='dia') rango = esDomFest ? h.domDia : h.dia;
+  else if(tipoEfectivo==='tarde') rango = esDomFest ? h.domTarde : h.tarde;
+  else rango = esDomFest ? h.domNoche : h.noche;
+  return calcularSegmentos(rango[0], rango[1], h.descanso, h.nocheFranja[0], h.nocheFranja[1]);
+}
+
+function construirPlanilla(inicio, fin){
+  const key = inicio+'_'+fin;
+  const overrides = planillaOverrides[key] || {};
+  const h = getHorarios();
+  const filas = [];
+  let d = new Date(inicio+'T00:00:00');
+  const dFin = new Date(fin+'T00:00:00');
+  while(d<=dFin){
+    const fechaStr = d.toISOString().slice(0,10);
+    const info = detalleTurnoFecha(fechaStr);
+    const baseTipo = info ? info.tipo : null;
+    const ov = overrides[fechaStr] || {};
+    const tipoEfectivo = ov.tipo || baseTipo;
+    const esDomFest = d.getDay()===0 || festivos.includes(fechaStr);
+    const permiso = ov.permiso || 0;
+    const seg = segmentoParaDia(tipoEfectivo, esDomFest, h);
+    filas.push({
+      fecha: fechaStr,
+      diaSemana: d.toLocaleDateString('es-CO',{weekday:'short'}),
+      baseTipo, tipoEfectivo, esDomFest, permiso,
+      diurno: seg.diurno, nocturno: seg.nocturno,
+      total: seg.diurno+seg.nocturno,
+      sinDato: !baseTipo && !ov.tipo
+    });
+    d.setDate(d.getDate()+1);
+  }
+  return filas;
+}
+
+function renderPlanilla(filas, key){
+  const card = document.getElementById('cardPlanilla');
+  card.style.display = '';
+  const box = document.getElementById('planillaBox');
+  let html = `<table class="planilla"><thead><tr>
+    <th>Fecha</th><th>Turno</th><th>Permiso (h)</th><th>Detalle</th>
+  </tr></thead><tbody>`;
+  filas.forEach(f=>{
+    const esOverride = !!(planillaOverrides[key] && planillaOverrides[key][f.fecha] && planillaOverrides[key][f.fecha].tipo);
+    const detalle = f.tipoEfectivo==='descanso' ? 'Descanso' :
+      (f.sinDato ? '<span style="color:var(--bad);">sin secuencia definida</span>' :
+      `${f.nocturno.toFixed(1)}h noct. / ${f.diurno.toFixed(1)}h diurna`);
+    const opciones = ['dia','tarde','noche','descanso'].map(t=>
+      `<option value="${t}" ${esOverride && f.tipoEfectivo===t?'selected':''}>${NOMBRE_TIPO[t]} (corregir)</option>`
+    ).join('');
+    html += `<tr>
+      <td>${f.fecha.slice(8,10)}/${f.fecha.slice(5,7)} (${f.diaSemana})${f.esDomFest?'<span class="badge-domfest">Dom/Fest</span>':''}</td>
+      <td>
+        <select onchange="cambiarTipoDia('${key}','${f.fecha}', this.value)">
+          <option value="" ${!esOverride?'selected':''}>${f.baseTipo?NOMBRE_TIPO[f.baseTipo]:'—'} (calendario)</option>
+          ${opciones}
+        </select>
+        ${esOverride?'<span class="badge-override">corregido</span>':''}
+      </td>
+      <td><input type="number" min="0" step="0.5" value="${f.permiso||''}" placeholder="0" onchange="cambiarPermisoDia('${key}','${f.fecha}', this.value)"></td>
+      <td>${detalle}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  box.innerHTML = html;
+}
+
+function cambiarTipoDia(key, fecha, valor){
+  if(!planillaOverrides[key]) planillaOverrides[key] = {};
+  if(!planillaOverrides[key][fecha]) planillaOverrides[key][fecha] = {};
+  planillaOverrides[key][fecha].tipo = valor || null;
+  save('planilla_overrides_v1', planillaOverrides);
+  recalcularCorte(key);
+}
+function cambiarPermisoDia(key, fecha, valor){
+  if(!planillaOverrides[key]) planillaOverrides[key] = {};
+  if(!planillaOverrides[key][fecha]) planillaOverrides[key][fecha] = {};
+  planillaOverrides[key][fecha].permiso = parseFloat(valor)||0;
+  save('planilla_overrides_v1', planillaOverrides);
+  recalcularCorte(key);
+}
+
+function recalcularCorte(key){
+  const [inicio, fin] = key.split('_');
+  const filas = construirPlanilla(inicio, fin);
+  renderPlanilla(filas, key);
+
+  let recNocturno=0, recDomDia=0, recDomNoche=0, horasSobre8=0, totalPermiso=0, totalTrabajadas=0;
+  let diasTrabajo=0, diasDescanso=0, diasDomingo=0, diasSinDato=0;
+  filas.forEach(f=>{
+    totalPermiso += f.permiso;
+    totalTrabajadas += f.total;
+    if(f.sinDato){ diasSinDato++; return; }
+    if(f.tipoEfectivo==='descanso'){ diasDescanso++; return; }
+    diasTrabajo++;
+    if(f.esDomFest){
+      diasDomingo++;
+      recDomDia += f.diurno; recDomNoche += f.nocturno;
+    } else {
+      recNocturno += f.nocturno;
+    }
+    horasSobre8 += Math.max(0, f.total-8);
+  });
+
+  if(!horasCorte[key]) horasCorte[key] = {};
+  horasCorte[key].recNocturno = Math.round(recNocturno*100)/100;
+  horasCorte[key].recDomDia = Math.round(recDomDia*100)/100;
+  horasCorte[key].recDomNoche = Math.round(recDomNoche*100)/100;
+  save('nomina_horas_corte_v2', horasCorte);
+  corteActivoKey = key;
+  save('nomina_corte_activo_v1', key);
+
+  let resumen = `<b>Del corte:</b> ${diasTrabajo} turnos trabajados · ${diasDescanso} descansos`;
+  if(diasDomingo>0) resumen += ` · ${diasDomingo} en domingo/festivo`;
+  if(diasSinDato>0) resumen += ` · ⚠️ ${diasSinDato} día(s) sin secuencia definida`;
+  const meta = parseFloat(document.getElementById('metaHoras').value)||0;
+  const horasParaMeta = totalTrabajadas+totalPermiso;
+  resumen += `<br>Horas trabajadas + permiso: <b>${horasParaMeta.toFixed(1)}</b>${meta>0? ' / meta '+meta : ''}`;
+  resumen += `<br><br><b>Posibles horas extra (turnos de más de 8h):</b> ${horasSobre8.toFixed(1)}h. Esto solo se paga como hora extra si tu contrato no tiene un pacto de jornada especial para turnos rotativos — confírmalo con tu empresa.`;
+  document.getElementById('resumenCorte').innerHTML = resumen;
+
+  renderFilasHoras();
+  calcularNomina();
+  renderLiquidacion(key, filas);
+}
+
+function renderLiquidacion(key, filas){
+  const card = document.getElementById('cardLiquidacion');
+  card.style.display = '';
+  const p = getParams();
+  const valorHora = p.divisor>0 ? p.salario/p.divisor : 0;
+  const diasCorte = filas.length;
+  const sueldoProporcional = p.salario * diasCorte/30;
+  const auxProporcional = p.incluyeAux ? p.auxTransporte * diasCorte/30 : 0;
+  const datos = horasCorte[key] || {};
+
+  let totalRecargosExtra = 0;
+  const lineasRecargo = CATEGORIAS.map(cat=>{
+    const horas = datos[cat.id]||0;
+    const factor = factorCategoria(cat, p);
+    const monto = horas*valorHora*factor;
+    totalRecargosExtra += monto;
+    return {nombre:cat.nombre, horas, monto};
+  }).filter(l=>l.horas>0);
+
+  const subtotal = sueldoProporcional + totalRecargosExtra;
+  const deducciones = subtotal*0.08;
+  const neto = subtotal - deducciones + auxProporcional;
+
+  let html = `
+    <div class="liq-row sub"><span>Valor hora ordinaria</span><span>${fmt(valorHora)}</span></div>
+    <div class="liq-row sub"><span>Salario proporcional (${diasCorte} días)</span><span>${fmt(sueldoProporcional)}</span></div>
+  `;
+  lineasRecargo.forEach(l=>{
+    html += `<div class="liq-row sub"><span>${l.nombre} (${l.horas}h)</span><span>${fmt(l.monto)}</span></div>`;
+  });
+  html += `
+    <div class="liq-row bold"><span>Subtotal salarial</span><span>${fmt(subtotal)}</span></div>
+    <div class="liq-row neg"><span>Deducciones ley (8% salud y pensión)</span><span>-${fmt(deducciones)}</span></div>
+    <div class="liq-row pos"><span>+ Auxilio de transporte (sin descuento)</span><span>${fmt(auxProporcional)}</span></div>
+    <div class="liq-row neto"><span>PAGO NETO A RECIBIR</span><span>${fmt(neto)}</span></div>
+  `;
+  document.getElementById('liquidacionBox').innerHTML = html;
+}
+
+function calcularDesdeCalendario(){
+  const inicio = document.getElementById('corteInicio').value;
+  const fin = document.getElementById('corteFin').value;
+  if(!inicio || !fin){ mostrarAlerta('Elige la fecha de inicio y fin del corte.'); return; }
+  recalcularCorte(inicio+'_'+fin);
+}
+
+function cargarUltimoCorte(){
+  const key = loadJSON('nomina_corte_activo_v1', null);
+  if(key && horasCorte[key]){
+    corteActivoKey = key;
+    const [ini, fin] = key.split('_');
+    document.getElementById('corteInicio').value = ini;
+    document.getElementById('corteFin').value = fin;
+    recalcularCorte(key);
+  }
+}
+
+let corteActivoKey = null;
+
+function getParams(){
+  return {
+    salario: parseFloat(document.getElementById('salario').value)||0,
+    divisor: parseFloat(document.getElementById('divisor').value)||210,
+    incluyeAux: document.getElementById('incluyeAux').checked,
+    auxTransporte: parseFloat(document.getElementById('auxTransporte').value)||0,
+    pNocturno: (parseFloat(document.getElementById('pNocturno').value)||0)/100,
+    pExtraDia: (parseFloat(document.getElementById('pExtraDia').value)||0)/100,
+    pExtraNoche: (parseFloat(document.getElementById('pExtraNoche').value)||0)/100,
+    pDominical: (parseFloat(document.getElementById('pDominical').value)||0)/100,
+  };
+}
+
+function factorCategoria(cat, p){
+  const mapa = {pNocturno:p.pNocturno, pExtraDia:p.pExtraDia, pExtraNoche:p.pExtraNoche, pDominical:p.pDominical};
+  let suma = cat.factorKeys.reduce((a,k)=> a + mapa[k], 0);
+  return cat.tipo==='extra' ? (1+suma) : suma;
+}
+
+function renderFilasHoras(){
+  const p = getParams();
+  const valorHora = p.divisor>0 ? p.salario/p.divisor : 0;
+  const box = document.getElementById('filasHoras');
+  box.innerHTML = '';
+  const datos = (corteActivoKey && horasCorte[corteActivoKey]) ? horasCorte[corteActivoKey] : {};
+  CATEGORIAS.forEach(cat=>{
+    const factor = factorCategoria(cat, p);
+    const valorHoraCat = valorHora*factor;
+    const div = document.createElement('div');
+    div.className = 'factor-row';
+    const valorActual = datos[cat.id]!==undefined ? datos[cat.id] : '';
+    div.innerHTML = `
+      <div class="nombre">${cat.nombre}<small>${cat.sub} · ${fmt(valorHoraCat)}/hora</small></div>
+      <input type="number" min="0" step="0.5" value="${valorActual}" placeholder="0" onchange="actualizarHoras('${cat.id}', this.value)">
+    `;
+    box.appendChild(div);
+  });
+}
+
+function actualizarHoras(catId, val){
+  if(!corteActivoKey){ corteActivoKey = 'manual_'+uid(); }
+  if(!horasCorte[corteActivoKey]) horasCorte[corteActivoKey] = {};
+  horasCorte[corteActivoKey][catId] = parseFloat(val)||0;
+  save('nomina_horas_corte_v2', horasCorte);
+  save('nomina_corte_activo_v1', corteActivoKey);
+  calcularNomina();
+}
+
+function calcularNomina(){
+  const p = getParams();
+  const valorHora = p.divisor>0 ? p.salario/p.divisor : 0;
+  const datos = (corteActivoKey && horasCorte[corteActivoKey]) ? horasCorte[corteActivoKey] : {};
+  let total = 0;
+  CATEGORIAS.forEach(cat=>{
+    const horas = datos[cat.id]||0;
+    const factor = factorCategoria(cat, p);
+    total += horas*valorHora*factor;
+  });
+  document.getElementById('totalCorte').textContent = fmt(total);
+  save('nomina_params_v1', p);
+
+  const baseCesantiasPrima = p.salario + (p.incluyeAux? p.auxTransporte : 0);
+  const cesantias = baseCesantiasPrima/12;
+  const intCesantiasMensual = (baseCesantiasPrima*0.12)/12;
+  const prima = baseCesantiasPrima/12;
+  const vacaciones = p.salario/24;
+
+  document.getElementById('pCesantias').textContent = fmt(cesantias);
+  document.getElementById('pIntCesantias').textContent = fmt(intCesantiasMensual);
+  document.getElementById('pPrima').textContent = fmt(prima);
+  document.getElementById('pVacaciones').textContent = fmt(vacaciones);
+}
+
+/* ---------- perfil ---------- */
+function cargarPerfil(){
+  const perfil = loadJSON('perfil_turnos_v1', {nombre:'', pin:''});
+  document.getElementById('perfilNombre').value = perfil.nombre || '';
+  document.getElementById('dashGreeting').textContent = perfil.nombre ? `Hola, ${perfil.nombre} 👋` : 'Hola 👋';
+  document.getElementById('lockNombre').textContent = perfil.nombre ? `Hola, ${perfil.nombre}` : 'Turnos y Nómina';
+  document.getElementById('pinActivo').checked = !!perfil.pin;
+  document.getElementById('pinSetupBox').style.display = perfil.pin ? '' : 'none';
+  return perfil;
+}
+function guardarPerfil(){
+  const perfil = loadJSON('perfil_turnos_v1', {nombre:'', pin:''});
+  perfil.nombre = document.getElementById('perfilNombre').value.trim();
+  save('perfil_turnos_v1', perfil);
+  cargarPerfil();
+}
+function togglePinActivo(activo){
+  const perfil = loadJSON('perfil_turnos_v1', {nombre:'', pin:''});
+  document.getElementById('pinSetupBox').style.display = activo ? '' : 'none';
+  if(!activo){ perfil.pin = ''; save('perfil_turnos_v1', perfil); }
+}
+function guardarPin(){
+  const val = document.getElementById('nuevoPin').value.trim();
+  if(!/^\d{4}$/.test(val)){ mostrarAlerta('El PIN debe ser de 4 números.'); return; }
+  const perfil = loadJSON('perfil_turnos_v1', {nombre:'', pin:''});
+  perfil.pin = val;
+  save('perfil_turnos_v1', perfil);
+  document.getElementById('nuevoPin').value = '';
+  mostrarAlerta('PIN guardado.');
+}
+
+/* ---------- candado de PIN al abrir ---------- */
+let pinIngresado = '';
+function renderPinPad(){
+  const pad = document.getElementById('pinPad');
+  pad.innerHTML = '';
+  const teclas = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
+  teclas.forEach(t=>{
+    const btn = document.createElement('button');
+    if(t===''){ btn.style.visibility='hidden'; }
+    else {
+      btn.textContent = t;
+      btn.onclick = ()=> t==='⌫' ? borrarDigitoPin() : agregarDigitoPin(t);
+    }
+    pad.appendChild(btn);
+  });
+  actualizarPinDots();
+}
+function actualizarPinDots(){
+  const dots = document.getElementById('pinDots');
+  dots.innerHTML = '';
+  for(let i=0;i<4;i++){
+    const d = document.createElement('div');
+    d.className = 'dot' + (i<pinIngresado.length ? ' filled':'');
+    dots.appendChild(d);
+  }
+}
+function agregarDigitoPin(d){
+  if(pinIngresado.length>=4) return;
+  pinIngresado += d;
+  actualizarPinDots();
+  document.getElementById('pinError').textContent = '';
+  if(pinIngresado.length===4){
+    const perfil = loadJSON('perfil_turnos_v1', {nombre:'', pin:''});
+    if(pinIngresado === perfil.pin){
+      document.getElementById('lockScreen').style.display = 'none';
+      document.getElementById('appContent').style.display = '';
+    } else {
+      document.getElementById('pinError').textContent = 'PIN incorrecto, intenta de nuevo.';
+      pinIngresado = '';
+      setTimeout(actualizarPinDots, 300);
+    }
+  }
+}
+function borrarDigitoPin(){
+  pinIngresado = pinIngresado.slice(0,-1);
+  actualizarPinDots();
+}
+
+/* ---------- exportar / importar datos ---------- */
+function exportarDatos(){
+  const datos = {
+    bloques, anclas, festivos, horasCorte, planillaOverrides,
+    nominaParams: loadJSON('nomina_params_v1', {}),
+    horarios: {
+      hDiaIni: document.getElementById('hDiaIni').value, hDiaFin: document.getElementById('hDiaFin').value,
+      hTardeIni: document.getElementById('hTardeIni').value, hTardeFin: document.getElementById('hTardeFin').value,
+      hNocheIni: document.getElementById('hNocheIni').value, hNocheFin: document.getElementById('hNocheFin').value,
+      hDomDiaIni: document.getElementById('hDomDiaIni').value, hDomDiaFin: document.getElementById('hDomDiaFin').value,
+      hDomTardeIni: document.getElementById('hDomTardeIni').value, hDomTardeFin: document.getElementById('hDomTardeFin').value,
+      hDomNocheIni: document.getElementById('hDomNocheIni').value, hDomNocheFin: document.getElementById('hDomNocheFin').value,
+      hDescanso: document.getElementById('hDescanso').value
+    },
+    perfil: loadJSON('perfil_turnos_v1', {}),
+    exportado: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(datos, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'turnos-nomina-backup.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function importarDatos(){
+  const input = document.getElementById('archivoImportar');
+  const archivo = input.files[0];
+  if(!archivo){ mostrarAlerta('Primero elige un archivo .json.'); return; }
+  const lector = new FileReader();
+  lector.onload = (e)=>{
+    try{
+      const datos = JSON.parse(e.target.result);
+      mostrarConfirm('¿Reemplazar tus datos actuales con los del archivo importado?', ()=>{
+        if(datos.bloques) bloques = datos.bloques;
+        if(datos.anclas) anclas = datos.anclas;
+        if(datos.festivos) festivos = datos.festivos;
+        if(datos.horasCorte) horasCorte = datos.horasCorte;
+        if(datos.planillaOverrides) planillaOverrides = datos.planillaOverrides;
+        save('turnos_bloques_v1', bloques);
+        save('turnos_anclas_v1', anclas);
+        save('festivos_v1', festivos);
+        save('nomina_horas_corte_v2', horasCorte);
+        save('planilla_overrides_v1', planillaOverrides);
+        if(datos.nominaParams) save('nomina_params_v1', datos.nominaParams);
+        if(datos.perfil) save('perfil_turnos_v1', datos.perfil);
+        if(datos.horarios){
+          Object.keys(datos.horarios).forEach(k=>{
+            const el = document.getElementById(k);
+            if(el) el.value = datos.horarios[k];
+          });
+        }
+        cargarPerfil();
+        renderBloques(); renderSelectorAncla(); renderAnclas(); renderCalendario(); renderLeyenda();
+        renderFestivos(); initNomina();
+        mostrarAlerta('Datos importados correctamente.');
+      });
+    }catch(err){ mostrarAlerta('El archivo no es un JSON válido.'); }
+  };
+  lector.readAsText(archivo);
+}
+
+/* ---------- reiniciar todo ---------- */
+function reiniciarTodo(){
+  mostrarConfirm('¿Seguro? Esto borra todos tus datos guardados en este dispositivo y vuelve a empezar desde cero.', ()=>{
+    ['turnos_bloques_v1','turnos_anclas_v1','festivos_v1','nomina_horas_corte_v2','planilla_overrides_v1','nomina_params_v1','nomina_corte_activo_v1'].forEach(k=>localStorage.removeItem(k));
+    bloques = [{tipo:'dia', dias:2}, {tipo:'noche', dias:2}, {tipo:'descanso', dias:2}];
+    anclas = []; festivos = []; horasCorte = {}; planillaOverrides = {}; corteActivoKey = null;
+    document.getElementById('corteInicio').value=''; document.getElementById('corteFin').value='';
+    document.getElementById('cardPlanilla').style.display='none';
+    document.getElementById('cardLiquidacion').style.display='none';
+    document.getElementById('resumenCorte').innerHTML='';
+    renderBloques(); renderSelectorAncla(); renderAnclas(); renderCalendario(); renderLeyenda();
+    renderFestivos(); initNomina();
+  });
+}
+
+/* ---------- init ---------- */
+function initNomina(){
+  const guardados = loadJSON('nomina_params_v1', null);
+  if(guardados){
+    document.getElementById('salario').value = guardados.salario;
+    document.getElementById('divisor').value = guardados.divisor;
+    document.getElementById('incluyeAux').checked = guardados.incluyeAux;
+    document.getElementById('auxTransporte').value = guardados.auxTransporte;
+    document.getElementById('pNocturno').value = (guardados.pNocturno*100);
+    document.getElementById('pExtraDia').value = (guardados.pExtraDia*100);
+    document.getElementById('pExtraNoche').value = (guardados.pExtraNoche*100);
+    document.getElementById('pDominical').value = (guardados.pDominical*100);
+  }
+  ['salario','divisor','incluyeAux','auxTransporte','pNocturno','pExtraDia','pExtraNoche','pDominical'].forEach(id=>{
+    document.getElementById(id).addEventListener('input', ()=>{ renderFilasHoras(); calcularNomina(); });
+    document.getElementById(id).addEventListener('change', ()=>{ renderFilasHoras(); calcularNomina(); });
+  });
+  renderFestivos();
+  cargarUltimoCorte();
+  renderFilasHoras();
+  calcularNomina();
+}
+
+renderBloques();
+renderSelectorAncla();
+renderAnclas();
+renderCalendario();
+renderLeyenda();
+initNomina();
+
+const perfilInicial = cargarPerfil();
+if(perfilInicial.pin){
+  document.getElementById('lockScreen').style.display = 'flex';
+  document.getElementById('appContent').style.display = 'none';
+  renderPinPad();
+} else {
+  document.getElementById('lockScreen').style.display = 'none';
+  document.getElementById('appContent').style.display = '';
+}
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
